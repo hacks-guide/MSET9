@@ -168,7 +168,10 @@ if osver == "Darwin":
 			if dirname.startswith(tmpprefix):
 				dirpath = f"{systmp}/{dirname}"
 				script = f"{dirpath}/mset9.py"
-				if os.path.exists(script) and os.stat(script).st_mtime > os.stat(thisfile).st_mtime:
+				tmp_st = os.stat(script)
+				this_st = os.stat(thisfile)
+				# hope file size is enough fix... checksum is a bit heavy i assume
+				if os.path.exists(script) and tmp_st.st_mtime > this_st.st_mtime and tmp_st.st_size == this_st.st_size:
 					tmpdir = dirpath
 					break
 				else:
@@ -503,7 +506,7 @@ if osver == "Darwin":
 				prinfo("might also be ios entitlement issue")
 				prinfo("please install ldid or fix your python manually")
 				prinfo("(require entitlement com.apple.private.security.disk-device-access)")
-		elif "Invalid" in msg:
+		elif "Invalid" in msg or "bytes per sector" in msg:
 			prbad("Error 15: Not FAT32 formatted or corrupted filesystem.")
 			prinfo("Please ensure your SD card is properly formatted")
 			prinfo("Consult: https://wiki.hacks.guide/wiki/Formatting_an_SD_card")
