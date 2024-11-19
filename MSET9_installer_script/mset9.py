@@ -724,7 +724,7 @@ def createHaxID1():
 	except Exception as exc:
 		if isinstance(exc, OSError) and osver == "Windows" and exc.winerror == 234: # WinError 234 my love
 			prbad("Error 18: Windows locale settings are broken!")
-			prinfo("Consult https://3ds.hacks.guide/troubleshooting#installing-boot9strap-mset9 for instructions.")
+			prinfo("Consult https://3ds.hacks.guide/troubleshooting-mset9 for instructions.")
 			prinfo("If you need help, join Nintendo Homebrew on Discord: https://discord.gg/nintendohomebrew")
 		elif isinstance(exc, OSError) and osver == "Linux" and exc.errno == 22: # Don't want this message to display on Windows if it ever manages to
 			prbad("Failed to create hacked ID1!") # Give this an error number?
@@ -927,7 +927,7 @@ for dirname in fs.listdir("Nintendo 3DS/"):
 
 if ID0Count != 1:
 	prbad(f"Error 04: You don't have 1 ID0 in your Nintendo 3DS folder, you have {ID0Count}!")
-	prinfo("Consult: https://3ds.hacks.guide/troubleshooting#installing-boot9strap-mset9 for help!")
+	prinfo("Consult: https://3ds.hacks.guide/troubleshooting-mset9 for help!")
 	exitOnEnter()
 
 for dirname in fs.listdir(ID0):
@@ -988,7 +988,7 @@ for dirname in fs.listdir(ID0):
 
 if ID1Count != 1:
 	prbad(f"Error 05: You don't have 1 ID1 in your Nintendo 3DS folder, you have {ID1Count}!")
-	prinfo("Consult: https://3ds.hacks.guide/troubleshooting#installing-boot9strap-mset9 for help!")
+	prinfo("Consult: https://3ds.hacks.guide/troubleshooting-mset9 for help!")
 	exitOnEnter()
 
 def mainMenu():
