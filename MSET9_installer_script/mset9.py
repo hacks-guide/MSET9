@@ -168,14 +168,14 @@ if osver == "Darwin":
 			if dirname.startswith(tmpprefix):
 				dirpath = f"{systmp}/{dirname}"
 				script = f"{dirpath}/mset9.py"
-				tmp_st = os.stat(script)
-				this_st = os.stat(thisfile)
-				# hope file size is enough fix... checksum is a bit heavy i assume
-				if os.path.exists(script) and tmp_st.st_mtime > this_st.st_mtime and tmp_st.st_size == this_st.st_size:
-					tmpdir = dirpath
-					break
-				else:
-					shutil.rmtree(dirpath)
+				if os.path.exists(script):
+					tmp_st = os.stat(script)
+					this_st = os.stat(thisfile)
+					# hope file size is enough fix... checksum is a bit heavy i assume
+					if tmp_st.st_mtime > this_st.st_mtime and tmp_st.st_size == this_st.st_size:
+						tmpdir = dirpath
+						break
+				shutil.rmtree(dirpath)
 		if tmpdir is None:
 			prinfo("Creating temporary folder...")
 			tmpdir = tempfile.mkdtemp(prefix=tmpprefix)
