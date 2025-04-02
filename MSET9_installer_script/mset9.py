@@ -305,9 +305,10 @@ def createHaxID1():
 titleDatabasesGood = False
 menuExtdataGood = False
 miiExtdataGood = False
+miiPlazaExtdata = False
 
 def sanity():
-	global fs, hackedID1Path, titleDatabasesGood, menuExtdataGood, miiExtdataGood
+	global fs, hackedID1Path, titleDatabasesGood, menuExtdataGood, miiExtdataGood, miiPlazaExtdata
 
 	prinfo("Checking databases...")
 	checkTitledb  = softcheck(hackedID1Path + "/dbs/title.db",  0x31E400)
@@ -322,15 +323,16 @@ def sanity():
 
 	prinfo("Checking for HOME Menu extdata...")
 	for i in homeMenuExtdata:
-		extdataRegionCheck = hackedID1Path + f"/extdata/00000000/{i:08X}"
-		if os.path.exists(abs(extdataRegionCheck)):
+		if os.path.exists(abs(hackedID1Path + f"/extdata/00000000/{i:08X}")):
 			menuExtdataGood = True
 			break
 	
 	prinfo("Checking for Mii Maker extdata...")
 	for i in miiMakerExtdata:
-		extdataRegionCheck = hackedID1Path + f"/extdata/00000000/{i:08X}"
-		if os.path.exists(abs(extdataRegionCheck)):
+		if os.path.exists(abs(hackedID1Path + f"/extdata/00000000/{i+1:08X}")):
+			miiPlazaExtdata = True
+
+		if os.path.exists(abs(hackedID1Path + f"/extdata/00000000/{i:08X}")):
 			miiExtdataGood = True
 			break
 
@@ -351,6 +353,9 @@ def sanityReport():
 	if not miiExtdataGood:
 		prbad("Mii Maker extdata: Missing!")
 		prinfo("Please power on your console with your SD inserted, then launch Mii Maker.")
+		# *
+		if miiPlazaExtdata:
+			prinfo("Reminder: Mii Maker is the app with the \"Mii\" icon; StreetPass Mii Plaza is different!")
 	else:
 		prgood("Mii Maker extdata: OK!")
 
