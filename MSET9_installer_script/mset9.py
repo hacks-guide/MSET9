@@ -134,7 +134,6 @@ def fix_hangul(name):
 
 verify_device()
 dig_for_root()
-
 try_chdir()
 
 def clearScreen():
