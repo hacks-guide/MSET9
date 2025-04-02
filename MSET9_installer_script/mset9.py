@@ -183,7 +183,6 @@ if not os.path.exists(abs("Nintendo 3DS/")):
 
 # Section: sdWritable
 def writeProtectCheck():
-	global fs
 	prinfo("Checking if SD card is writeable...")
 	if not is_writable():
 		prbad("Error 02: Your SD card is write protected! If using a full size SD card, ensure that the lock switch is facing upwards.")
@@ -191,15 +190,6 @@ def writeProtectCheck():
 		exitOnEnter()
 	else:
 		prgood("SD card is writeable!")
-
-# Section: SD card free space
-# ensure 16MB free space
-freeSpace = shutil.disk_usage(scriptroot).free
-if not freeSpace >= 16 * 1024 * 1024:
-	prbad(f"Error 06: You need at least 16MB free space on your SD card, you have {(freeSpace / 1000000):.2f} bytes!")
-	prbad("Error 06: You need at least 16MB free space on your SD card!")
-	prinfo("Please free up some space and try again.")
-	exitOnEnter()
 
 clearScreen()
 print(f"MSET9 {VERSION} SETUP by zoogie, Aven, DannyAAM and thepikachugamer")
@@ -254,7 +244,7 @@ trigger = "002F003A.txt"  # all 3ds ":/" in hex format
 triggerFilePath = ""
 
 def createHaxID1():
-	global fs, ID0, hackedID1Path, realID1Path, realID1BackupTag
+	global ID0, hackedID1Path, realID1Path, realID1BackupTag
 
 	print("\033[0;33m=== DISCLAIMER ===\033[0m") # 5;33m? The blinking is awesome but I also don't want to frighten users lol
 	print()
@@ -317,7 +307,7 @@ miiExtdataGood = False
 miiPlazaExtdata = False
 
 def sanity():
-	global fs, hackedID1Path, titleDatabasesGood, menuExtdataGood, miiExtdataGood, miiPlazaExtdata
+	global hackedID1Path, titleDatabasesGood, menuExtdataGood, miiExtdataGood, miiPlazaExtdata
 
 	prinfo("Checking databases...")
 	checkTitledb  = softcheck(hackedID1Path + "/dbs/title.db",  0x31E400)
@@ -380,7 +370,7 @@ def sanityReport():
 	print()
 
 def injection(create=True):
-	global fs, haxState, hackedID1Path, trigger
+	global haxState, hackedID1Path, trigger
 
 	triggerFilePath = hackedID1Path + "/extdata/" + trigger
 
@@ -392,6 +382,11 @@ def injection(create=True):
 		os.remove(abs(triggerFilePath))
 		haxState = 4
 		prgood("Removed trigger file.")
+	freeSpace = shutil.disk_usage(scriptroot).free
+	if freeSpace < 16 * 1024 * 1024:
+		prbad(f"Error 06: You need at least 16MB free space on your SD card, you have {(freeSpace / 1000000):.2f} bytes!")
+		prbad("Error 06: You need at least 16MB free space on your SD card!")
+		prinfo("Please free up some space and try again.")
 		return
 
 	prinfo("Injecting trigger file...")
@@ -403,7 +398,7 @@ def injection(create=True):
 	exitOnEnter()
 
 def remove():
-	global fs, ID0, ID1, hackedID1Path, realID1Path, realID1BackupTag, titleDatabasesGood
+	global ID0, ID1, hackedID1Path, realID1Path, realID1BackupTag, titleDatabasesGood
 
 	prinfo("Removing MSET9...")
 
@@ -425,7 +420,6 @@ def remove():
 	prgood("Successfully removed MSET9!")
 
 def softcheck(keyfile, expectedSize = None, crc32 = None):
-	global fs
 	filename = keyfile.rsplit("/")[-1]
 
 	if not os.path.exists(abs(keyfile)):
