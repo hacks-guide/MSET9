@@ -167,9 +167,18 @@ def getInput(options):
 
 # Section: insureRoot
 if not os.path.exists(abs("Nintendo 3DS/")):
-	prbad("Error 01: Couldn't find Nintendo 3DS folder! Ensure that you are running this script from the root of the SD card.")
-	prbad("If that doesn't work, eject the SD card, and put it back in your console. Turn it on and off again, then rerun this script.")
-	prinfo(f"Current dir: {scriptroot}")
+	prbad("Error 01: Nintendo 3DS folder not found!")
+	prinfo(f"Current location: {scriptroot}")
+	print()
+
+	prinfo("How to generate the Nintendo 3DS folder:")
+	prinfo("1. Safely eject your SD card from your PC.")
+	prinfo("2. Insert your SD card into your 3DS.")
+	prinfo("3. Power on your 3DS, and wait for it to reach the HOME menu.")
+	prinfo("4. Press the POWER button to turn off your 3DS.")
+	prinfo("5. Re-insert your SD card into your PC.")
+	prinfo("The Nintendo 3DS folder should appear on the SD card.")
+
 	exitOnEnter()
 
 # Section: sdWritable
