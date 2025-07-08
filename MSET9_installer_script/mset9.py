@@ -237,7 +237,7 @@ trigger = "002F003A.txt"  # all 3ds ":/" in hex format
 triggerFilePath = ""
 
 def createHaxID1():
-	global consoleIndex, ID0, hackedID1Path, realID1Path, realID1BackupTag
+	global consoleIndex, ID0, hackedID1, hackedID1Path, realID1Path, realID1BackupTag
 
 	clearScreen()
 	print(f"MSET9 {VERSION} SETUP by zoogie, Aven, DannyAAM and thepikachugamer")
@@ -281,7 +281,9 @@ def createHaxID1():
 		if not realID1Path.endswith(realID1BackupTag):
 			prinfo("Backing up original ID1...")
 			os.rename(abs(realID1Path), abs(realID1Path + realID1BackupTag))
+
 		try:
+			hackedID1Path = ID0 + "/" + hackedID1
 			prinfo("Creating hacked ID1...")
 			os.mkdir(abs(hackedID1Path))
 			prinfo("Creating dummy databases...")
@@ -576,6 +578,7 @@ while 1:
 	optSelect = getInput(range(0, 5))
 	if optSelect <= 0:
 		break
+
 	elif optSelect == 1: # Create hacked ID1
 		createHaxID1()
 		exitOnEnter()
@@ -601,8 +604,7 @@ while 1:
 
 		remove()
 		remove_extra()
-		exitOnEnter(remount=True)
+		exitOnEnter()
 
-cleanup(remount=True)
 prgood("See ya later, alligator...")
 time.sleep(2)
