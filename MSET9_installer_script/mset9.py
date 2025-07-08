@@ -86,8 +86,10 @@ def try_chdir():
 	global scriptroot
 	try:
 		os.chdir(scriptroot)
-	except Exception:
-		prbad("Error 08: Couldn't reapply working directory, is SD card reinserted?")
+	except Exception as exc:
+		# prbad("Error 08: Couldn't reapply working directory, is SD card reinserted?") Wasn't in the troubleshooting section, doesn't really need a number IMO
+		prbad("Failed to change directory to SD card. is it inserted?")
+		prbad(f"Error details: {str(exc)}")
 		exitOnEnter()
 
 def is_writable():
