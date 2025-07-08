@@ -327,9 +327,9 @@ miiPlazaExtdata = False
 def sanity():
 	global hackedID1Path, titleDatabasesGood, menuExtdataGood, miiExtdataGood, miiPlazaExtdata
 
-	prinfo("Checking databases...")
-	checkTitledb  = softcheck(hackedID1Path + "/dbs/title.db",  0x31E400)
-	checkImportdb = softcheck(hackedID1Path + "/dbs/import.db", 0x31E400)
+	# prinfo("Checking databases...")
+	checkTitledb  = softcheck(hackedID1Path + "/dbs/title.db",  0x31E400, silent=True)
+	checkImportdb = softcheck(hackedID1Path + "/dbs/import.db", 0x31E400, silent=True)
 	titleDatabasesGood = not (checkTitledb or checkImportdb)
 	if not titleDatabasesGood:
 		if not os.path.exists(abs(hackedID1Path + "/dbs")):
@@ -338,13 +338,13 @@ def sanity():
 		open(abs(hackedID1Path + "/dbs/title.db"),  "w").close()
 		open(abs(hackedID1Path + "/dbs/import.db"), "w").close()
 
-	prinfo("Checking for HOME Menu extdata...")
+	# prinfo("Checking for HOME Menu extdata...")
 	for i in homeMenuExtdata:
 		if os.path.exists(abs(hackedID1Path + f"/extdata/00000000/{i:08X}")):
 			menuExtdataGood = True
 			break
-	
-	prinfo("Checking for Mii Maker extdata...")
+
+	# prinfo("Checking for Mii Maker extdata...")
 	for i in miiMakerExtdata:
 		if os.path.exists(abs(hackedID1Path + f"/extdata/00000000/{i+1:08X}")):
 			miiPlazaExtdata = True
@@ -427,19 +427,19 @@ def remove():
 	haxState = 0
 	prgood("Successfully removed MSET9!")
 
-def softcheck(keyfile, expectedSize = None, crc32 = None):
+def softcheck(keyfile, expectedSize = None, crc32 = None, silent = False):
 	filename = keyfile.rsplit("/")[-1]
 
 	if not os.path.exists(abs(keyfile)):
-		prbad(f"{filename} does not exist on SD card!")
+		silent or prbad(f"{filename} does not exist on SD card!")
 		return 1
 
 	fileSize = os.path.getsize(abs(keyfile))
 	if not fileSize:
-		prbad(f"{filename} is an empty file!")
+		silent or prbad(f"{filename} is an empty file!")
 		return 1
 	elif expectedSize and fileSize != expectedSize:
-		prbad(f"{filename} is size {fileSize:,} bytes, not expected {expectedSize:,} bytes")
+		silent or prbad(f"{filename} is size {fileSize:,} bytes, not expected {expectedSize:,} bytes")
 		return 1
 
 	if crc32:
@@ -447,10 +447,10 @@ def softcheck(keyfile, expectedSize = None, crc32 = None):
 			checksum = binascii.crc32(f.read())
 			f.close()
 			if crc32 != checksum:
-				prbad(f"{filename} was not recognized as the correct file")
+				silent or prbad(f"{filename} was not recognized as the correct file")
 				return 1
 
-	prgood(f"{filename} looks good!")
+	silent or prgood(f"{filename} looks good!")
 	return 0
 
 def is3DSID(name):
@@ -533,6 +533,7 @@ for dirname in os.listdir(abs(ID0)):
 			prbad("Unrecognized hacked ID1 in ID0 folder, removing!")
 			shutil.rmtree(abs(fullpath))
 
+		prinfo(f"Detected hacked ID1 for {consoleNames[consoleIndex]}")
 		hackedID1Path = fullpath
 		triggerFilePath = abs(hackedID1Path + "/extdata/" + trigger)
 		sanityOK = sanity()
