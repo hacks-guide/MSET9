@@ -606,7 +606,6 @@ while 1:
 			continue
 
 		remove()
-		remove_extra()
 		exitOnEnter()
 
 prgood("See ya later, alligator...")
