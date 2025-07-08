@@ -480,7 +480,7 @@ fileSanity += softcheck("b9", crc32=0xD59F0CAD)
 fileSanity += softcheck("SafeB9S.bin")
 
 if fileSanity > 0:
-	prbad("Error 07: One or more files are missing or malformed!")
+	prbad("Error 03: One or more files are missing or malformed!")
 	prinfo("Please re-extract the MSET9 zip file, overwriting any existing files when prompted.")
 	exitOnEnter()
 
