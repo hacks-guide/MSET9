@@ -475,7 +475,7 @@ fileSanity += softcheck("boot9strap/boot9strap.firm", crc32=0x08129C1F)
 fileSanity += softcheck("boot.firm")
 fileSanity += softcheck("boot.3dsx")
 fileSanity += softcheck("b9", crc32=0xD59F0CAD)
-fileSanity += softcheck("SafeB9S.bin", crc32=0x93CDC5A5)
+fileSanity += softcheck("SafeB9S.bin")
 
 if fileSanity > 0:
 	prbad("Error 07: One or more files are missing or malformed!")
