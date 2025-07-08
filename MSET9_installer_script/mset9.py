@@ -14,14 +14,18 @@ def prbad(content):
 def prinfo(content):
 	print(f"[--] {content}")
 
-def exitOnEnter(errCode = 0):
-	input("[--] Press Enter to exit...")
-	exit(errCode)
 
 osver = platform.system()
 thisfile = os.path.abspath(__file__)
 scriptroot = os.path.dirname(thisfile)
 systmp = None
+
+def exitOnEnter(errCode = 0):
+	if osver == "Linux":
+		os.sync()
+
+	input("[--] Press Enter to exit...")
+	exit(errCode)
 
 def need_hangul_fix():
 	if osver == "Darwin":
