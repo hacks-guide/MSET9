@@ -182,6 +182,10 @@ if not os.path.exists(abs("Nintendo 3DS/")):
 	prinfo("4. Press the POWER button to turn off your 3DS.")
 	prinfo("5. Re-insert your SD card into your PC.")
 	prinfo("The Nintendo 3DS folder should appear on the SD card.")
+	print()
+	prinfo("If the folder still does not appear, or your 3DS complains that the SD card")
+	prinfo("could not be detected/could not be accessed, you may need to format the SD card to FAT32.")
+	prinfo("Consult: https://wiki.hacks.guide/wiki/Formatting_an_SD_card")
 
 	exitOnEnter()
 
