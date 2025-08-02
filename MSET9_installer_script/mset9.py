@@ -222,14 +222,21 @@ encodedID1s = {
 
 ID0, ID0Count, ID1, ID1Count = "", 0, "", 0
 
-haxStates = {
-	0: "\033[30;1mID1 not created\033[0m",
-	1: "\033[33;1mNot ready - check MSET9 status for more details\033[0m",
-	2: "\033[32mReady\033[0m",
+class haxStates:
+    ID1_NOT_PRESENT = 0
+    NOT_READY = 1
+    READY_TO_INJECT = 2
+    TRIGGER_FILE_REMOVED = 3
+
+haxStateLabel = {
+	haxStates.ID1_NOT_PRESENT: "\033[30;1mID1 not created\033[0m",
+	haxStates.NOT_READY: "\033[33;1mNot ready - check MSET9 status for more details\033[0m",
+	haxStates.READY_TO_INJECT: "\033[32mReady\033[0m",
 	# "\033[32;1mInjected\033[0m", # you must go
-	3: "\033[32mRemoved trigger file\033[0m"
+	haxStates.TRIGGER_FILE_REMOVED: "\033[32mRemoved trigger file\033[0m"
 }
-haxState = 0
+
+haxState = haxStates.ID1_NOT_PRESENT
 
 realID1Path = ""
 realID1BackupTag = "_user-id1"
@@ -453,7 +460,7 @@ def remove():
 		ID1 = ID1[:32]
 		realID1Path = ID0 + "/" + ID1
 
-	haxState = 0
+	haxState = haxStates.ID1_NOT_PRESENT
 	prgood("Successfully removed MSET9!")
 
 def softcheck(keyfile, expectedSize = None, crc32 = None, silent = False):
@@ -569,30 +576,30 @@ for dirname in os.listdir(abs(ID0)):
 
 		if os.path.exists(triggerFilePath):
 			os.remove(triggerFilePath)
-			haxState = 3 # Removed
+			haxState = haxStates.TRIGGER_FILE_REMOVED
 		elif sanityOK:
-			haxState = 2 # Ready!
+			haxState = haxStates.READY_TO_INJECT
 		else:
-			haxState = 1 # Not ready...
+			haxState = haxStates.NOT_READY
 
 if ID1Count != 1:
 	prbad(f"Error 05: You don't have 1 ID1 in your Nintendo 3DS folder, you have {ID1Count}!")
 	prinfo("Consult: https://3ds.hacks.guide/troubleshooting-mset9.html for help!")
 	exitOnEnter()
 
-if haxState != 0 and not realID1Path.endswith(realID1BackupTag): # ?
+if haxState != haxStates.ID1_NOT_PRESENT and not realID1Path.endswith(realID1BackupTag): # ?
 	os.rename(abs(realID1Path), abs(realID1Path + realID1BackupTag))
 
 clearScreen()
 print(f"MSET9 {VERSION} SETUP by zoogie, Aven, DannyAAM and thepikachugamer")
 print()
-print(f"Current MSET9 state: {haxStates[haxState]}")
+print(f"Current MSET9 state: {haxStateLabel[haxState]}")
 
 print("\n-- Please type in a number then hit return --\n")
 
 print("↓ Input one of these numbers!")
 
-if haxState == 0:
+if haxState == haxStates.ID1_NOT_PRESENT:
 	print("1. Create MSET9 ID1")
 else:
 	print(f"1. Change console version (Current: {consoleNames[consoleIndex]})")
@@ -614,21 +621,21 @@ while 1:
 		exitOnEnter()
 
 	elif optSelect == 2: # Check status
-		if haxState == 0: # MSET9 ID1 not present
+		if haxState == haxStates.ID1_NOT_PRESENT:
 			prbad("Can't do that now!")
 			continue
 		sanityReport()
 		exitOnEnter()
 
 	elif optSelect == 3: # Inject trigger file
-		if haxState != 2: # Ready to inject
+		if haxState != haxStates.READY_TO_INJECT:
 			prbad("Can't do that now!")
 			continue
 		injection()
 		exitOnEnter()
 
 	elif optSelect == 4: # Remove MSET9
-		if haxState == 0:
+		if haxState == haxStates.ID1_NOT_PRESENT:
 			prinfo("Nothing to do.")
 			continue
 
