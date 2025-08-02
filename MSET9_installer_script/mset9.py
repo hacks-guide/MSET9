@@ -207,6 +207,10 @@ consoleNames = {
 	3: "Old 3DS/2DS, 11.4.0 to 11.7.0",
 	4: "New 3DS/2DS, 11.4.0 to 11.7.0"
 }
+
+primaryConsoleVersions = [ 1, 2 ]
+secondaryConsoleVersions = [ 3, 4 ]
+
 consoleIndex = 0
 
 encodedID1s = {
@@ -238,9 +242,7 @@ miiMakerExtdata = [0x217, 0x227, 0x207, 0x267, 0x277, 0x287]  # us,eu,jp,ch,kr,t
 trigger = "002F003A.txt"  # all 3ds ":/" in hex format
 triggerFilePath = ""
 
-def createHaxID1():
-	global consoleIndex, ID0, hackedID1, hackedID1Path, realID1Path, realID1BackupTag
-
+def pickConsoleVersion():
 	clearScreen()
 	print(f"MSET9 {VERSION} SETUP by zoogie, Aven, DannyAAM and thepikachugamer")
 	print("What is your console model and version?")
@@ -249,14 +251,39 @@ def createHaxID1():
 
 	print("\n-- Please type in a number then hit return --\n")
 
-	print("Enter one of these four numbers!")
-	for i in consoleNames:
-		print(f"Enter {i} for: {consoleNames[i]}")
+	print("Enter one of these numbers!")
+	for i in primaryConsoleVersions:
+		print(f"{i}: {consoleNames[i]}")
 
-	selectedIndex = getInput(range(1, 4))
+	print("9: Other firmware versions")
+
+	selectedIndex = getInput([*primaryConsoleVersions, 9])
 	if selectedIndex < 0:
 		prgood("Goodbye!")
-		exitOnEnter(remount=True)
+		exitOnEnter()
+
+	if selectedIndex != 9:
+		return selectedIndex
+
+	for i in secondaryConsoleVersions:
+		print(f"{i}: {consoleNames[i]}")
+
+	print("0: Back")
+	selectedIndex = getInput([*secondaryConsoleVersions, 0])
+	if selectedIndex < 0:
+		prgood("Goodbye!")
+		exitOnEnter()
+
+	if selectedIndex != 0:
+		return selectedIndex
+
+	return pickConsoleVersion()
+
+
+def createHaxID1():
+	global consoleIndex, ID0, hackedID1, hackedID1Path, realID1Path, realID1BackupTag
+
+	selectedIndex = pickConsoleVersion()
 
 	hackedID1 = bytes.fromhex(encodedID1s[selectedIndex]).decode("utf-16le")
 
