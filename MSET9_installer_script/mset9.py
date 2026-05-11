@@ -402,7 +402,7 @@ def remove():
 		prinfo("Deleting hacked ID1...")
 		shutil.rmtree(abs(hackedID1Path))
 
-	if os.path.exists(abs(realID1Path) and realID1Path.endswith(realID1BackupTag)):
+	if os.path.exists(abs(realID1Path) and realID1Path.endswith(realID1BackupTag):
 		prinfo("Renaming original ID1...")
 		os.rename(abs(realID1Path), abs(ID0 + "/" + ID1[:32]))
 		ID1 = ID1[:32]
