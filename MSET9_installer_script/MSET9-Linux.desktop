@@ -1,0 +1,5 @@
+[Desktop Entry]
+Type=Application
+Name=MSET9
+Exec=bash -c 'cd "$(dirname %k)"; python3 mset9.py'
+Terminal=true
