@@ -1,5 +1,5 @@
 [Desktop Entry]
 Type=Application
 Name=MSET9
-Exec=bash -c 'cd "$(dirname %k)"; python3 mset9.py'
+Exec=bash -c 'findmnt -t vfat -n -o TARGET | while read -r drive; do if [[ -f "$drive/mset9.py" ]]; then cd "$drive" && python3 mset9.py < /dev/tty; fi; done;'
 Terminal=true
