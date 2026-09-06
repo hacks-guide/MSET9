@@ -14,14 +14,18 @@ def prbad(content):
 def prinfo(content):
 	print(f"[--] {content}")
 
-def exitOnEnter(errCode = 0):
-	input("[--] Press Enter to exit...")
-	exit(errCode)
 
 osver = platform.system()
 thisfile = os.path.abspath(__file__)
 scriptroot = os.path.dirname(thisfile)
 systmp = None
+
+def exitOnEnter(errCode = 0):
+	if osver == "Linux":
+		os.sync()
+
+	input("[--] Press Enter to exit...")
+	exit(errCode)
 
 def need_hangul_fix():
 	if osver == "Darwin":
@@ -82,8 +86,10 @@ def try_chdir():
 	global scriptroot
 	try:
 		os.chdir(scriptroot)
-	except Exception:
-		prbad("Error 08: Couldn't reapply working directory, is SD card reinserted?")
+	except Exception as exc:
+		# prbad("Error 08: Couldn't reapply working directory, is SD card reinserted?") Wasn't in the troubleshooting section, doesn't really need a number IMO
+		prbad("Failed to change directory to SD card. is it inserted?")
+		prbad(f"Error details: {str(exc)}")
 		exitOnEnter()
 
 def is_writable():
@@ -134,7 +140,6 @@ def fix_hangul(name):
 
 verify_device()
 dig_for_root()
-
 try_chdir()
 
 def clearScreen():
@@ -168,14 +173,26 @@ def getInput(options):
 
 # Section: insureRoot
 if not os.path.exists(abs("Nintendo 3DS/")):
-	prbad("Error 01: Couldn't find Nintendo 3DS folder! Ensure that you are running this script from the root of the SD card.")
-	prbad("If that doesn't work, eject the SD card, and put it back in your console. Turn it on and off again, then rerun this script.")
-	prinfo(f"Current dir: {scriptroot}")
+	prbad("Error 01: Nintendo 3DS folder not found!")
+	prinfo(f"Current location: {scriptroot}")
+	print()
+
+	prinfo("How to generate the Nintendo 3DS folder:")
+	prinfo("1. Safely eject your SD card from your PC.")
+	prinfo("2. Insert your SD card into your 3DS.")
+	prinfo("3. Power on your 3DS, and wait for it to reach the HOME menu.")
+	prinfo("4. Press the POWER button to turn off your 3DS.")
+	prinfo("5. Re-insert your SD card into your PC.")
+	prinfo("The Nintendo 3DS folder should appear on the SD card.")
+	print()
+	prinfo("If the folder still does not appear, or your 3DS complains that the SD card")
+	prinfo("could not be detected/could not be accessed, you may need to format the SD card to FAT32.")
+	prinfo("Consult: https://wiki.hacks.guide/wiki/Formatting_an_SD_card")
+
 	exitOnEnter()
 
 # Section: sdWritable
 def writeProtectCheck():
-	global fs
 	prinfo("Checking if SD card is writeable...")
 	if not is_writable():
 		prbad("Error 02: Your SD card is write protected! If using a full size SD card, ensure that the lock switch is facing upwards.")
@@ -184,23 +201,6 @@ def writeProtectCheck():
 	else:
 		prgood("SD card is writeable!")
 
-# Section: SD card free space
-# ensure 16MB free space
-freeSpace = shutil.disk_usage(scriptroot).free
-if not freeSpace >= 16 * 1024 * 1024:
-	prbad(f"Error 06: You need at least 16MB free space on your SD card, you have {(freeSpace / 1000000):.2f} bytes!")
-	prbad("Error 06: You need at least 16MB free space on your SD card!")
-	prinfo("Please free up some space and try again.")
-	exitOnEnter()
-
-clearScreen()
-print(f"MSET9 {VERSION} SETUP by zoogie, Aven, DannyAAM and thepikachugamer")
-print("What is your console model and version?")
-print("Old 3DS has two shoulder buttons (L and R)")
-print("New 3DS has four shoulder buttons (L, R, ZL, ZR)")
-
-print("\n-- Please type in a number then hit return --\n")
-
 consoleNames = {
 	1: "Old 3DS/2DS, 11.8.0 to 11.17.0",
 	2: "New 3DS/2DS, 11.8.0 to 11.17.0",
@@ -208,14 +208,10 @@ consoleNames = {
 	4: "New 3DS/2DS, 11.4.0 to 11.7.0"
 }
 
-print("Enter one of these four numbers!")
-for i in consoleNames:
-	print(f"Enter {i} for: {consoleNames[i]}")
+primaryConsoleVersions = [ 1, 2 ]
+secondaryConsoleVersions = [ 3, 4 ]
 
-# print("Enter 1 for: Old 3DS/2DS, 11.8.0 to 11.17.0")
-# print("Enter 2 for: New 3DS/2DS, 11.8.0 to 11.17.0")
-# print("Enter 3 for: Old 3DS/2DS, 11.4.0 to 11.7.0")
-# print("Enter 4 for: New 3DS/2DS, 11.4.0 to 11.7.0")
+consoleIndex = 0
 
 encodedID1s = {
 	1: "01C08FE21CFF2FE111990B488546696507A10122044B984768465946C0AA171C4346024CA047B84771A0050899CE0408730064006D00630000900A0862003900",
@@ -224,20 +220,28 @@ encodedID1s = {
 	4: "01C08FE21CFF2FE111990B488546696507A10122044B984768465946C0AA171C4346024CA047B847459E050881CC0408730064006D00630000900A0862003900"
 }
 
-consoleIndex = getInput(range(1, 4))
-if consoleIndex < 0:
-	prgood("Goodbye!")
-	exitOnEnter()
-
 ID0, ID0Count, ID1, ID1Count = "", 0, "", 0
 
-haxStates = ["\033[30;1mID1 not created\033[0m", "\033[33;1mNot ready - check MSET9 status for more details\033[0m", "\033[32mReady\033[0m", "\033[32;1mInjected\033[0m", "\033[32mRemoved trigger file\033[0m"]
-haxState = 0
+class haxStates:
+    ID1_NOT_PRESENT = 0
+    NOT_READY = 1
+    READY_TO_INJECT = 2
+    TRIGGER_FILE_REMOVED = 3
+
+haxStateLabel = {
+	haxStates.ID1_NOT_PRESENT: "\033[30;1mID1 not created\033[0m",
+	haxStates.NOT_READY: "\033[33;1mNot ready - check MSET9 status for more details\033[0m",
+	haxStates.READY_TO_INJECT: "\033[32mReady\033[0m",
+	# "\033[32;1mInjected\033[0m", # you must go
+	haxStates.TRIGGER_FILE_REMOVED: "\033[32mRemoved trigger file\033[0m"
+}
+
+haxState = haxStates.ID1_NOT_PRESENT
 
 realID1Path = ""
 realID1BackupTag = "_user-id1"
 
-hackedID1 = bytes.fromhex(encodedID1s[consoleIndex]).decode("utf-16le")  # ID1 - arm injected payload in readable format
+hackedID1 = ""
 hackedID1Path = ""
 
 homeMenuExtdata = [0x8F,  0x98,  0x82,  0xA1,  0xA9,  0xB1]  # us,eu,jp,ch,kr,tw
@@ -245,74 +249,123 @@ miiMakerExtdata = [0x217, 0x227, 0x207, 0x267, 0x277, 0x287]  # us,eu,jp,ch,kr,t
 trigger = "002F003A.txt"  # all 3ds ":/" in hex format
 triggerFilePath = ""
 
+def pickConsoleVersion():
+	clearScreen()
+	print(f"MSET9 {VERSION} SETUP by zoogie, Aven, DannyAAM and thepikachugamer")
+	print("What is your console model and version?")
+	print("Old 3DS has two shoulder buttons (L and R)")
+	print("New 3DS has four shoulder buttons (L, R, ZL, ZR)")
+
+	print("\n-- Please type in a number then hit return --\n")
+
+	print("Enter one of these numbers!")
+	for i in primaryConsoleVersions:
+		print(f"{i}: {consoleNames[i]}")
+
+	print("9: Other firmware versions")
+
+	selectedIndex = getInput([*primaryConsoleVersions, 9])
+	if selectedIndex < 0:
+		prgood("Goodbye!")
+		exitOnEnter()
+
+	if selectedIndex != 9:
+		return selectedIndex
+
+	for i in secondaryConsoleVersions:
+		print(f"{i}: {consoleNames[i]}")
+
+	print("0: Back")
+	selectedIndex = getInput([*secondaryConsoleVersions, 0])
+	if selectedIndex < 0:
+		prgood("Goodbye!")
+		exitOnEnter()
+
+	if selectedIndex != 0:
+		return selectedIndex
+
+	return pickConsoleVersion()
+
+
 def createHaxID1():
-	global fs, ID0, hackedID1Path, realID1Path, realID1BackupTag
+	global consoleIndex, ID0, hackedID1, hackedID1Path, realID1Path, realID1BackupTag
 
-	print("\033[0;33m=== DISCLAIMER ===\033[0m") # 5;33m? The blinking is awesome but I also don't want to frighten users lol
-	print()
-	print("This process will temporarily reset all your 3DS data.")
-	print("All your applications and themes will disappear.")
-	print("This is perfectly normal, and if everything goes right, it will re-appear")
-	print("at the end of the process.")
-	print()
-	print("In any case, it is highly recommended to make a backup of your SD card's contents to a folder on your PC.")
-	print("(Especially the 'Nintendo 3DS' folder.)")
-	print()
+	selectedIndex = pickConsoleVersion()
 
-	if osver == "Linux": # ...
-		print("(on Linux, things like to not go right - please ensure that your SD card is mounted with the 'utf8' option.)")
+	hackedID1 = bytes.fromhex(encodedID1s[selectedIndex]).decode("utf-16le")
+
+	if consoleIndex == 0:
+		print("\033[0;33m=== DISCLAIMER ===\033[0m") # 5;33m? The blinking is awesome but I also don't want to frighten users lol
+		print()
+		print("This process will temporarily reset all your 3DS data.")
+		print("All your applications and themes will disappear.")
+		print("This is perfectly normal, and if everything goes right, it will re-appear")
+		print("at the end of the process.")
+		print()
+		print("In any case, it is highly recommended to make a backup of your SD card's contents to a folder on your PC.")
+		print("(Especially the 'Nintendo 3DS' folder.)")
 		print()
 
-	print("Input '1' again to confirm.")
-	print("Input '2' to cancel.")
-	time.sleep(3)
-	if getInput(range(1, 2)) != 1:
-		print()
-		prinfo("Cancelled.")
-		exitOnEnter()
+		print("Input '1' again to confirm.")
+		print("Input '2' to cancel.")
+		time.sleep(3)
+		if getInput(range(1, 2)) != 1:
+			print()
+			prinfo("Cancelled.")
+			return
 
-	hackedID1Path = ID0 + "/" + hackedID1
+		if not realID1Path.endswith(realID1BackupTag):
+			prinfo("Backing up original ID1...")
+			os.rename(abs(realID1Path), abs(realID1Path + realID1BackupTag))
 
-	try:
-		prinfo("Creating hacked ID1...")
-		os.mkdir(abs(hackedID1Path))
-		prinfo("Creating dummy databases...")
-		os.mkdir(abs(hackedID1Path + "/dbs"))
-		open(abs(hackedID1Path + "/dbs/title.db"), "w").close()
-		open(abs(hackedID1Path + "/dbs/import.db"), "w").close()
-	except Exception as exc:
-		if isinstance(exc, OSError) and osver == "Windows" and exc.winerror == 234: # WinError 234 my love
-			prbad("Error 18: Windows locale settings are broken!")
-			prinfo("Consult https://3ds.hacks.guide/troubleshooting-mset9.html for instructions.")
-			prinfo("If you need help, join Nintendo Homebrew on Discord: https://discord.gg/nintendohomebrew")
-		elif isinstance(exc, OSError) and osver == "Linux" and exc.errno == 22: # Don't want this message to display on Windows if it ever manages to
-			prbad("Failed to create hacked ID1!") # Give this an error number?
-			prbad(f"Error details: {str(exc)}")
-			prinfo("Please unmount your SD card and remount it with the 'utf8' option.") # Should we do this ourself? Like look at macOS
-		else:
-			prbad("An unknown error occured!")
-			prbad(f"Error details: {str(exc)}")
-			prinfo("Join Nintendo Homebrew on Discord for help: https://discord.gg/nintendohomebrew")
+		try:
+			hackedID1Path = ID0 + "/" + hackedID1
+			prinfo("Creating hacked ID1...")
+			os.mkdir(abs(hackedID1Path))
+			prinfo("Creating dummy databases...")
+			os.mkdir(abs(hackedID1Path + "/dbs"))
+			open(abs(hackedID1Path + "/dbs/title.db"), "w").close()
+			open(abs(hackedID1Path + "/dbs/import.db"), "w").close()
+		except Exception as exc:
+			if isinstance(exc, OSError) and osver == "Windows" and exc.winerror == 234: # WinError 234 my love
+				prbad("Error 18: Windows locale settings are broken!")
+				prinfo("Consult https://3ds.hacks.guide/troubleshooting-mset9.html for instructions.")
+				prinfo("If you need help, join Nintendo Homebrew on Discord: https://discord.gg/nintendohomebrew")
+			elif isinstance(exc, OSError) and osver == "Linux" and exc.errno == 22: # Don't want this message to display on Windows if it ever manages to
+				prbad("Failed to create hacked ID1!") # Give this an error number?
+				prbad(f"Error details: {str(exc)}")
+				prinfo("Please unmount your SD card and remount it with the 'utf8' option.") # Should we do this ourself? Like look at macOS
+			else:
+				prbad("An unknown error occured!")
+				prbad(f"Error details: {str(exc)}")
+				prinfo("Join Nintendo Homebrew on Discord for help: https://discord.gg/nintendohomebrew")
 
-		exitOnEnter()
+			exitOnEnter()
 
-	if not realID1Path.endswith(realID1BackupTag):
-		prinfo("Backing up original ID1...")
-		os.rename(abs(realID1Path), abs(realID1Path + realID1BackupTag))
+		prgood("Created hacked ID1.")
+		return
 
-	prgood("Created hacked ID1.")
-	exitOnEnter()
+	elif selectedIndex == consoleIndex:
+		prinfo("No change made.")
+		return
+
+	else:
+		os.rename(abs(hackedID1Path), abs(ID0 + "/" + hackedID1))
+		hackedID1Path = ID0 + "/" + hackedID1
+		prinfo(f"Switched to \"{consoleNames[selectedIndex]}\".")
+		return
 
 titleDatabasesGood = False
 menuExtdataGood = False
 miiExtdataGood = False
+miiPlazaExtdata = False
 
 def sanity():
-	global fs, hackedID1Path, titleDatabasesGood, menuExtdataGood, miiExtdataGood
+	global hackedID1Path, titleDatabasesGood, menuExtdataGood, miiExtdataGood, miiPlazaExtdata
 
-	prinfo("Checking databases...")
-	checkTitledb  = softcheck(hackedID1Path + "/dbs/title.db",  0x31E400)
-	checkImportdb = softcheck(hackedID1Path + "/dbs/import.db", 0x31E400)
+	# prinfo("Checking databases...")
+	checkTitledb  = softcheck(hackedID1Path + "/dbs/title.db",  0x31E400, silent=True)
+	checkImportdb = softcheck(hackedID1Path + "/dbs/import.db", 0x31E400, silent=True)
 	titleDatabasesGood = not (checkTitledb or checkImportdb)
 	if not titleDatabasesGood:
 		if not os.path.exists(abs(hackedID1Path + "/dbs")):
@@ -321,17 +374,18 @@ def sanity():
 		open(abs(hackedID1Path + "/dbs/title.db"),  "w").close()
 		open(abs(hackedID1Path + "/dbs/import.db"), "w").close()
 
-	prinfo("Checking for HOME Menu extdata...")
+	# prinfo("Checking for HOME Menu extdata...")
 	for i in homeMenuExtdata:
-		extdataRegionCheck = hackedID1Path + f"/extdata/00000000/{i:08X}"
-		if os.path.exists(abs(extdataRegionCheck)):
+		if os.path.exists(abs(hackedID1Path + f"/extdata/00000000/{i:08X}")):
 			menuExtdataGood = True
 			break
-	
-	prinfo("Checking for Mii Maker extdata...")
+
+	# prinfo("Checking for Mii Maker extdata...")
 	for i in miiMakerExtdata:
-		extdataRegionCheck = hackedID1Path + f"/extdata/00000000/{i:08X}"
-		if os.path.exists(abs(extdataRegionCheck)):
+		if os.path.exists(abs(hackedID1Path + f"/extdata/00000000/{i+1:08X}")):
+			miiPlazaExtdata = True
+
+		if os.path.exists(abs(hackedID1Path + f"/extdata/00000000/{i:08X}")):
 			miiExtdataGood = True
 			break
 
@@ -352,6 +406,9 @@ def sanityReport():
 	if not miiExtdataGood:
 		prbad("Mii Maker extdata: Missing!")
 		prinfo("Please power on your console with your SD inserted, then launch Mii Maker.")
+		# *
+		if miiPlazaExtdata:
+			prinfo("Reminder: Mii Maker is the app with the \"Mii\" icon; StreetPass Mii Plaza is different!")
 	else:
 		prgood("Mii Maker extdata: OK!")
 
@@ -366,19 +423,15 @@ def sanityReport():
 
 	print()
 
-def injection(create=True):
-	global fs, haxState, hackedID1Path, trigger
+def injection():
+	global haxState, hackedID1Path, trigger
 
 	triggerFilePath = hackedID1Path + "/extdata/" + trigger
 
-	if not os.path.exists(abs(triggerFilePath)) ^ create:
-		prbad(f"Trigger file already {'injected' if create else 'removed'}!")
-		return
-
-	if os.path.exists(abs(triggerFilePath)):
-		os.remove(abs(triggerFilePath))
-		haxState = 4
-		prgood("Removed trigger file.")
+	freeSpace = shutil.disk_usage(scriptroot).free
+	if freeSpace < 16 * 1024 * 1024: # This is a good time to actually check the space
+		prbad(f"Error 06: You need at least 16MB free space on your SD card, you have {(freeSpace / 1000000):.2f} bytes!")
+		prinfo("Please free up some space and try again.")
 		return
 
 	prinfo("Injecting trigger file...")
@@ -387,10 +440,9 @@ def injection(create=True):
 		f.close()
 
 	prgood("MSET9 successfully injected!")
-	exitOnEnter()
 
 def remove():
-	global fs, ID0, ID1, hackedID1Path, realID1Path, realID1BackupTag, titleDatabasesGood
+	global ID0, ID1, hackedID1Path, realID1Path, realID1BackupTag, titleDatabasesGood
 
 	prinfo("Removing MSET9...")
 
@@ -408,23 +460,22 @@ def remove():
 		ID1 = ID1[:32]
 		realID1Path = ID0 + "/" + ID1
 
-	haxState = 0
+	haxState = haxStates.ID1_NOT_PRESENT
 	prgood("Successfully removed MSET9!")
 
-def softcheck(keyfile, expectedSize = None, crc32 = None):
-	global fs
+def softcheck(keyfile, expectedSize = None, crc32 = None, silent = False):
 	filename = keyfile.rsplit("/")[-1]
 
 	if not os.path.exists(abs(keyfile)):
-		prbad(f"{filename} does not exist on SD card!")
+		silent or prbad(f"{filename} does not exist on SD card!")
 		return 1
 
 	fileSize = os.path.getsize(abs(keyfile))
 	if not fileSize:
-		prbad(f"{filename} is an empty file!")
+		silent or prbad(f"{filename} is an empty file!")
 		return 1
 	elif expectedSize and fileSize != expectedSize:
-		prbad(f"{filename} is size {fileSize:,} bytes, not expected {expectedSize:,} bytes")
+		silent or prbad(f"{filename} is size {fileSize:,} bytes, not expected {expectedSize:,} bytes")
 		return 1
 
 	if crc32:
@@ -432,10 +483,10 @@ def softcheck(keyfile, expectedSize = None, crc32 = None):
 			checksum = binascii.crc32(f.read())
 			f.close()
 			if crc32 != checksum:
-				prbad(f"{filename} was not recognized as the correct file")
+				silent or prbad(f"{filename} was not recognized as the correct file")
 				return 1
 
-	prgood(f"{filename} looks good!")
+	silent or prgood(f"{filename} looks good!")
 	return 0
 
 def is3DSID(name):
@@ -459,11 +510,11 @@ fileSanity = 0
 fileSanity += softcheck("boot9strap/boot9strap.firm", crc32=0x08129C1F)
 fileSanity += softcheck("boot.firm")
 fileSanity += softcheck("boot.3dsx")
-fileSanity += softcheck("b9")
+fileSanity += softcheck("b9", crc32=0xD59F0CAD)
 fileSanity += softcheck("SafeB9S.bin")
 
 if fileSanity > 0:
-	prbad("Error 07: One or more files are missing or malformed!")
+	prbad("Error 03: One or more files are missing or malformed!")
 	prinfo("Please re-extract the MSET9 zip file, overwriting any existing files when prompted.")
 	exitOnEnter()
 
@@ -508,121 +559,88 @@ for dirname in os.listdir(abs(ID0)):
 		ID1Count += 1
 	elif "sdmc" in dirname and len(dirname) == 32:
 		currentHaxID1enc = dirname.encode("utf-16le").hex().upper()
-		currentHaxID1index = 0
 
 		for haxID1index in encodedID1s:
 			if currentHaxID1enc == encodedID1s[haxID1index]:
-				currentHaxID1index = haxID1index
+				consoleIndex = haxID1index
 				break
 
-		if currentHaxID1index == 0 or (hackedID1Path and os.path.exists(abs(hackedID1Path))): # shouldn't happen
-			prbad("Unrecognized/duplicate hacked ID1 in ID0 folder, removing!")
+		if consoleIndex == 0: # shouldn't happen
+			prbad("Unrecognized hacked ID1 in ID0 folder, removing!")
 			shutil.rmtree(abs(fullpath))
-		elif currentHaxID1index != consoleIndex:
-			prbad("Error 03: Don't change console model/version in the middle of MSET9!")
-			print(f"Earlier, you selected: '[{currentHaxID1index}.] {consoleNames[currentHaxID1index]}'")
-			print(f"Now, you selected:	 '[{consoleIndex}.] {consoleNames[consoleIndex]}'")
-			print()
-			print("Please re-enter the number for your console model and version.")
 
-			choice = getInput([consoleIndex, currentHaxID1index])
-			if choice < 0:
-				prinfo("Cancelled.")
-				hackedID1Path = fullpath
-				remove()
-				exitOnEnter()
-
-			elif choice == currentHaxID1index:
-				consoleIndex = currentHaxID1index
-				hackedID1 = dirname
-
-			elif choice == consoleIndex:
-				os.rename(abs(fullpath), abs(ID0 + "/" + hackedID1))
-
-		hackedID1Path = ID0 + "/" + hackedID1
+		prinfo(f"Detected hacked ID1 for {consoleNames[consoleIndex]}")
+		hackedID1Path = fullpath
+		triggerFilePath = abs(hackedID1Path + "/extdata/" + trigger)
 		sanityOK = sanity()
 
-		if os.path.exists(abs(hackedID1Path + "/extdata/" + trigger)):
-			triggerFilePath = hackedID1Path + "/extdata/" + trigger
-			haxState = 3 # Injected.
+		if os.path.exists(triggerFilePath):
+			os.remove(triggerFilePath)
+			haxState = haxStates.TRIGGER_FILE_REMOVED
 		elif sanityOK:
-			haxState = 2 # Ready!
+			haxState = haxStates.READY_TO_INJECT
 		else:
-			haxState = 1 # Not ready...
+			haxState = haxStates.NOT_READY
 
 if ID1Count != 1:
 	prbad(f"Error 05: You don't have 1 ID1 in your Nintendo 3DS folder, you have {ID1Count}!")
 	prinfo("Consult: https://3ds.hacks.guide/troubleshooting-mset9.html for help!")
 	exitOnEnter()
 
-def mainMenu():
-	clearScreen()
-	print(f"MSET9 {VERSION} SETUP by zoogie, Aven, DannyAAM and thepikachugamer")
-	print(f"Using {consoleNames[consoleIndex]}")
-	print()
-	print(f"Current MSET9 state: {haxStates[haxState]}")
+if haxState != haxStates.ID1_NOT_PRESENT and not realID1Path.endswith(realID1BackupTag): # ?
+	os.rename(abs(realID1Path), abs(realID1Path + realID1BackupTag))
 
-	print("\n-- Please type in a number then hit return --\n")
+clearScreen()
+print(f"MSET9 {VERSION} SETUP by zoogie, Aven, DannyAAM and thepikachugamer")
+print()
+print(f"Current MSET9 state: {haxStateLabel[haxState]}")
 
-	print("↓ Input one of these numbers!")
+print("\n-- Please type in a number then hit return --\n")
 
+print("↓ Input one of these numbers!")
+
+if haxState == haxStates.ID1_NOT_PRESENT:
 	print("1. Create MSET9 ID1")
+else:
+	print(f"1. Change console version (Current: {consoleNames[consoleIndex]})")
 	print("2. Check MSET9 status")
 	print("3. Inject trigger file")
-	print("4. Remove trigger file")
+	print("4. Remove MSET9")
 
-	if haxState != 3:
-		print("5. Remove MSET9")
+print("\n0. Exit")
 
-	print("\n0. Exit")
+while 1:
+	try_chdir() # (?)
 
-	while 1:
-		optSelect = getInput(range(0, 5))
+	optSelect = getInput(range(0, 5))
+	if optSelect <= 0:
+		break
 
-		try_chdir() # (?)
+	elif optSelect == 1: # Create hacked ID1
+		createHaxID1()
+		exitOnEnter()
 
-		if optSelect <= 0:
-			break
+	elif optSelect == 2: # Check status
+		if haxState == haxStates.ID1_NOT_PRESENT:
+			prbad("Can't do that now!")
+			continue
+		sanityReport()
+		exitOnEnter()
 
-		elif optSelect == 1: # Create hacked ID1
-			if haxState > 0:
-				prinfo("Hacked ID1 already exists.")
-				continue
-			createHaxID1()
-			exitOnEnter()
+	elif optSelect == 3: # Inject trigger file
+		if haxState != haxStates.READY_TO_INJECT:
+			prbad("Can't do that now!")
+			continue
+		injection()
+		exitOnEnter()
 
-		elif optSelect == 2: # Check status
-			if haxState == 0: # MSET9 ID1 not present
-				prbad("Can't do that now!")
-				continue
-			sanityReport()
-			exitOnEnter()
+	elif optSelect == 4: # Remove MSET9
+		if haxState == haxStates.ID1_NOT_PRESENT:
+			prinfo("Nothing to do.")
+			continue
 
-		elif optSelect == 3: # Inject trigger file
-			if haxState != 2: # Ready to inject
-				prbad("Can't do that now!")
-				continue
-			injection(create=True)
-			# exitOnEnter() # has it's own
+		remove()
+		exitOnEnter()
 
-		elif optSelect == 4: # Remove trigger file
-			if haxState < 2:
-				prbad("Can't do that now!")
-			injection(create=False)
-			time.sleep(3)
-			return mainMenu()
-
-		elif optSelect == 5: # Remove MSET9
-			if haxState <= 0:
-				prinfo("Nothing to do.")
-				continue
-			if haxState == 3:
-				prbad("Can't do that now!")
-				continue
-
-			remove()
-			exitOnEnter()
-
-mainMenu()
-prgood("Goodbye!")
+prgood("See ya later, alligator...")
 time.sleep(2)
