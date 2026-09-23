@@ -3,6 +3,13 @@ import abc, sys, os, platform, shutil, time, pathlib, binascii
 
 VERSION = "v2.1"
 
+class state:
+    ID1_NOT_PRESENT = 0
+    NOT_READY = 1
+    READY_TO_INJECT = 2
+    INJECTED = 3
+    TRIGGER_FILE_REMOVED = 4
+
 def prgood(content):
 	# print(f"[\033[0;32m✓\033[0m] {content}")
 	# so that people aren't confused by the [?]. stupid Windows.
@@ -232,7 +239,7 @@ if consoleIndex < 0:
 ID0, ID0Count, ID1, ID1Count = "", 0, "", 0
 
 haxStates = ["\033[30;1mID1 not created\033[0m", "\033[33;1mNot ready - check MSET9 status for more details\033[0m", "\033[32mReady\033[0m", "\033[32;1mInjected\033[0m", "\033[32mRemoved trigger file\033[0m"]
-haxState = 0
+haxState = state.ID1_NOT_PRESENT
 
 realID1Path = ""
 realID1BackupTag = "_user-id1"
@@ -377,7 +384,7 @@ def injection(create=True):
 
 	if os.path.exists(abs(triggerFilePath)):
 		os.remove(abs(triggerFilePath))
-		haxState = 4
+		haxState = state.TRIGGER_FILE_REMOVED
 		prgood("Removed trigger file.")
 		return
 
@@ -544,11 +551,11 @@ for dirname in os.listdir(abs(ID0)):
 
 		if os.path.exists(abs(hackedID1Path + "/extdata/" + trigger)):
 			triggerFilePath = hackedID1Path + "/extdata/" + trigger
-			haxState = 3 # Injected.
+			haxState = state.INJECTED # Injected.
 		elif sanityOK:
-			haxState = 2 # Ready!
+			haxState = state.READY_TO_INJECT # Ready!
 		else:
-			haxState = 1 # Not ready...
+			haxState = state.NOT_READY # Not ready...
 
 if ID1Count != 1:
 	prbad(f"Error 05: You don't have 1 ID1 in your Nintendo 3DS folder, you have {ID1Count}!")
@@ -585,38 +592,38 @@ def mainMenu():
 			break
 
 		elif optSelect == 1: # Create hacked ID1
-			if haxState > 0:
+			if haxState > state.ID1_NOT_PRESENT:
 				prinfo("Hacked ID1 already exists.")
 				continue
 			createHaxID1()
 			exitOnEnter()
 
 		elif optSelect == 2: # Check status
-			if haxState == 0: # MSET9 ID1 not present
+			if haxState == state.ID1_NOT_PRESENT: # MSET9 ID1 not present
 				prbad("Can't do that now!")
 				continue
 			sanityReport()
 			exitOnEnter()
 
 		elif optSelect == 3: # Inject trigger file
-			if haxState != 2: # Ready to inject
+			if haxState != state.READY_TO_INJECT: # Ready to inject
 				prbad("Can't do that now!")
 				continue
 			injection(create=True)
 			# exitOnEnter() # has it's own
 
 		elif optSelect == 4: # Remove trigger file
-			if haxState < 2:
+			if haxState < state.READY_TO_INJECT:
 				prbad("Can't do that now!")
 			injection(create=False)
 			time.sleep(3)
 			return mainMenu()
 
 		elif optSelect == 5: # Remove MSET9
-			if haxState <= 0:
+			if haxState <= state.ID1_NOT_PRESENT:
 				prinfo("Nothing to do.")
 				continue
-			if haxState == 3:
+			if haxState == state.INJECTED:
 				prbad("Can't do that now!")
 				continue
 
