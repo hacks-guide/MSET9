@@ -200,6 +200,8 @@ print("Old 3DS has two shoulder buttons (L and R)")
 print("New 3DS has four shoulder buttons (L, R, ZL, ZR)")
 
 print("\n-- Please type in a number then hit return --\n")
+# For the helpees
+print("\n-- Please do not confuse 11.17.0 and 11.7.0! --\n")
 
 consoleNames = {
 	1: "Old 3DS/2DS, 11.8.0 to 11.17.0",
