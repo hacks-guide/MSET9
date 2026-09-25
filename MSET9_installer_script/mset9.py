@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 import abc, sys, os, platform, shutil, time, pathlib, binascii
 
-VERSION = "v2.1"
+VERSION = "v2.2"
 
 def prgood(content):
 	# print(f"[\033[0;32m✓\033[0m] {content}")
@@ -202,8 +202,8 @@ print("New 3DS has four shoulder buttons (L, R, ZL, ZR)")
 print("\n-- Please type in a number then hit return --\n")
 
 consoleNames = {
-	1: "Old 3DS/2DS, 11.8.0 to 11.17.0",
-	2: "New 3DS/2DS, 11.8.0 to 11.17.0",
+	1: "Old 3DS/2DS, 11.8.0 to 11.17.0-50 (latest version)",
+	2: "New 3DS/2DS, 11.8.0 to 11.17.0-50 (latest version)",
 	3: "Old 3DS/2DS, 11.4.0 to 11.7.0",
 	4: "New 3DS/2DS, 11.4.0 to 11.7.0"
 }
